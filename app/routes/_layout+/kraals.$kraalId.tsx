@@ -129,7 +129,7 @@ export async function action({ context, request, params }: ActionFunctionArgs) {
           senderId: authSession.userId,
         });
 
-        return redirect(`/assets`);
+        return redirect(`/kraals`);
       }
 
       default: {
@@ -156,7 +156,7 @@ export const links: LinksFunction = () => [
   { rel: "stylesheet", href: mapCss },
 ];
 
-export default function AssetDetailsPage() {
+export default function KraalDetailsPage() {
   const { kraal } = useLoaderData<typeof loader>();
 
   let items = [

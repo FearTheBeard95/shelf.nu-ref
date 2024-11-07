@@ -45,6 +45,12 @@ export function Breadcrumb({
             {match?.data?.userName || "Not found"}
           </span>
         );
+      } else if (match?.data?.kraal) {
+        breadcrumb = (
+          <span className="single-crumb">
+            {match?.data?.kraal?.name || "Not found"}
+          </span>
+        );
       } else {
         breadcrumb = (
           <span className="single-crumb">
