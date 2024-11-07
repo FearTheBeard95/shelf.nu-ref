@@ -309,7 +309,7 @@ export const KraalList = ({
         /**
          * Using remix's navigate is the default behaviour, however it can receive also a custom function
          */
-        navigate={(itemId) => navigate(`/kraal/${itemId}`)}
+        navigate={(itemId) => navigate(`/kraals/${itemId}`)}
         bulkActions={disableBulkActions ? undefined : <BulkActionsDropdown />}
         customEmptyStateContent={
           customEmptyState ? customEmptyState : undefined

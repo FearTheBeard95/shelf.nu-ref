@@ -81,6 +81,11 @@ type AssetWithInclude<T extends Prisma.AssetInclude | undefined> =
     ? Prisma.AssetGetPayload<{ include: T }>
     : Asset;
 
+type KraalWithInclude<T extends Prisma.KraalInclude | undefined> =
+  T extends Prisma.KraalInclude
+    ? Prisma.KraalGetPayload<{ include: T }>
+    : Asset;
+
 export async function getAsset<T extends Prisma.AssetInclude | undefined>({
   id,
   organizationId,
@@ -103,6 +108,34 @@ export async function getAsset<T extends Prisma.AssetInclude | undefined>({
       message:
         "The asset you are trying to access does not exist or you do not have permission to access it.",
       additionalData: { id, organizationId },
+      label,
+      shouldBeCaptured: !isNotFoundError(cause),
+    });
+  }
+}
+
+export async function getKraal<T extends Prisma.KraalInclude | undefined>({
+  id,
+  userId,
+  include,
+}: Pick<Kraal, "id"> & {
+  userId: Kraal["userId"];
+  include?: T;
+}): Promise<KraalWithInclude<T>> {
+  try {
+    const kraal = await db.kraal.findFirstOrThrow({
+      where: { id, userId },
+      include: { ...include },
+    });
+
+    return kraal as KraalWithInclude<T>;
+  } catch (cause) {
+    throw new ShelfError({
+      cause,
+      title: "Kraal not found",
+      message:
+        "The kraal you are trying to access does not exist or you do not have permission to access it.",
+      additionalData: { id },
       label,
       shouldBeCaptured: !isNotFoundError(cause),
     });

@@ -21,6 +21,18 @@ export const KITS_INCLUDE_FIELDS = {
   },
 } satisfies Prisma.KitInclude;
 
+export const KRAAL_OVERVIEW_FIELDS = {
+  user: {
+    select: {
+      firstName: true,
+      lastName: true,
+      profilePicture: true,
+      email: true,
+    },
+  },
+  location: true,
+} satisfies Prisma.KraalInclude;
+
 export const ASSET_OVERVIEW_FIELDS = {
   category: true,
   qrCodes: true,
