@@ -316,6 +316,7 @@ export const KraalList = ({
         }
         headerChildren={
           <>
+            <Th>Capacity</Th>
             <Th>Location</Th>
           </>
         }
@@ -348,8 +349,16 @@ const ListKraalContent = ({ item }: { item: Kraal }) => {
                 {item.name}
               </span>
             </div>
+            {/* description */}
+            <div className="hidden md:block">
+              <span className="text-gray-500">{item.description}</span>
+            </div>
           </div>
         </div>
+      </Td>
+      {/* Capacity */}
+      <Td>
+        <GrayBadge>{item.capacity}</GrayBadge>
       </Td>
       {/* Location */}
       <Td>{location ? <GrayBadge>{location}</GrayBadge> : null}</Td>
