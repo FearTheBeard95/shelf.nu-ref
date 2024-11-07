@@ -82,7 +82,6 @@ model User {
 model Kraal {
   id                  String      @id @default(cuid())
   name                String
-  location            String
   capacity            Int?
   description         String?
 
@@ -93,6 +92,8 @@ model Kraal {
   // Relationships
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   userId         String
+  location       Location?    @relation(fields: [locationId], references: [id])
+  locationId     String?
 
   @@unique([name])
 }
@@ -337,6 +338,7 @@ model Location {
   organizationId String
 
   assets Asset[]
+  kraals Kraal[]
 
   // @@unique([lower(name), organizationId]) //prisma doesnt support case insensitive unique index yet
 }

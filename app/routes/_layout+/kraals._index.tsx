@@ -96,7 +96,7 @@ export async function loader({ context, request }: LoaderFunctionArgs) {
 
     if (filters && redirectNeeded) {
       const cookieParams = new URLSearchParams(filters);
-      return redirect(`/milaka?${cookieParams.toString()}`);
+      return redirect(`/kraal?${cookieParams.toString()}`);
     }
 
     let [{ kraals, totalKraals, totalPages, page, perPage }] =
@@ -133,10 +133,10 @@ export async function loader({ context, request }: LoaderFunctionArgs) {
         modelName,
         perPage,
         page,
-        searchFieldLabel: "Search crawls",
+        searchFieldLabel: "Search kraals",
         searchFieldTooltip: {
-          title: "Search your crawl database",
-          text: "Search crawl based on crawl name or description, category, tag, location, custodian name. Simply separate your keywords by a space: 'Laptop lenovo 2020'.",
+          title: "Search your kraal database",
+          text: "Search kraal based on kraal name or description, category, tag, location, custodian name. Simply separate your keywords by a space: 'Laptop lenovo 2020'.",
         },
         filters,
         organizationId,
@@ -247,11 +247,11 @@ export default function AssetIndexPage() {
             <Button
               to="new"
               role="link"
-              aria-label={`New Krawl`}
+              aria-label={`New Kraal`}
               icon="asset"
-              data-test-id="createNewKrawl"
+              data-test-id="createNewKraal"
             >
-              New krawl
+              New kraal
             </Button>
           </>
         </When>
@@ -325,7 +325,15 @@ export const KraalList = ({
   );
 };
 
-const ListKraalContent = ({ item }: { item: Kraal }) => {
+const ListKraalContent = ({
+  item,
+}: {
+  item: Kraal & {
+    location: {
+      name: string;
+    };
+  };
+}) => {
   const { location } = item;
   return (
     <>
@@ -361,7 +369,7 @@ const ListKraalContent = ({ item }: { item: Kraal }) => {
         <GrayBadge>{item.capacity}</GrayBadge>
       </Td>
       {/* Location */}
-      <Td>{location ? <GrayBadge>{location}</GrayBadge> : null}</Td>
+      <Td>{location ? <GrayBadge>{location.name}</GrayBadge> : null}</Td>
     </>
   );
 };

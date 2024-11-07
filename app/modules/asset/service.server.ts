@@ -12,6 +12,7 @@ import type {
   TeamMember,
   Booking,
   Kit,
+  Kraal,
 } from "@prisma/client";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import type {
@@ -467,6 +468,13 @@ async function getKraals(params: {
         skip,
         take,
         where,
+        include: {
+          location: {
+            select: {
+              name: true,
+            },
+          },
+        },
         orderBy: { [orderBy]: orderDirection },
       }),
       // Count the number of kraals
@@ -730,6 +738,40 @@ async function getAssets(params: {
       message: "Something went wrong while fetching assets",
       additionalData: { ...params },
       label,
+    });
+  }
+}
+
+export async function createKraal({
+  userId,
+  name,
+  description,
+  locationId,
+  capacity,
+}: Pick<Kraal, "name" | "description" | "userId" | "capacity"> & {
+  locationId?: Location["id"];
+}) {
+  try {
+    const data = {
+      userId,
+      name,
+      description,
+      locationId,
+      capacity,
+    };
+
+    const result = await db.kraal.create({
+      data,
+      include: {
+        location: true,
+        user: true,
+      },
+    });
+
+    return result;
+  } catch (cause) {
+    throw maybeUniqueConstraintViolation(cause, "Kraal", {
+      additionalData: { userId },
     });
   }
 }
