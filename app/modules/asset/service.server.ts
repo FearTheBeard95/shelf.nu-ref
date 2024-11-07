@@ -443,6 +443,47 @@ async function getAssetsFromView(params: {
   }
 }
 
+async function getKraals(params: {
+  userId: User["id"] /** Page number. Starts at 1 */;
+  page: number;
+  orderBy: SortingOptions;
+  orderDirection: SortingDirection;
+  /** Assets to be loaded per page */
+  perPage?: number;
+}) {
+  const { userId, page, orderBy, orderDirection, perPage = 8 } = params;
+
+  try {
+    const skip = page > 1 ? (page - 1) * perPage : 0;
+    const take = perPage >= 1 && perPage <= 100 ? perPage : 20; // min 1 and max 100 per page
+
+    /** Default value of where. Takes the assetss belonging to current user */
+    let where: Prisma.KraalWhereInput = { userId };
+
+    // fetch the kraals
+
+    const [kraals, totalKraals] = await Promise.all([
+      db.kraal.findMany({
+        skip,
+        take,
+        where,
+        orderBy: { [orderBy]: orderDirection },
+      }),
+      // Count the number of kraals
+      db.kraal.count({ where }),
+    ]);
+
+    return { kraals, totalKraals };
+  } catch (cause) {
+    throw new ShelfError({
+      cause,
+      message: "Something went wrong while fetching kraals",
+      additionalData: { ...params },
+      label,
+    });
+  }
+}
+
 /**
  * Fetches assets directly from asset table
  */
@@ -1396,6 +1437,55 @@ export async function getAllEntriesForCreateAndEdit({
         organizationId,
         getAllEntries,
       },
+      label,
+    });
+  }
+}
+
+export async function getPaginatedAndFilterableKraals({
+  request,
+  userId,
+  filters = "",
+}: {
+  request: LoaderFunctionArgs["request"];
+  userId: User["id"];
+  filters?: string;
+}) {
+  const currentFilterParams = new URLSearchParams(filters);
+  const searchParams = filters
+    ? currentFilterParams
+    : getCurrentSearchParams(request);
+
+  const paramsValues = getParamsValues(searchParams);
+  const { page, perPageParam, orderBy, orderDirection } = paramsValues;
+
+  const cookie = await updateCookieWithPerPage(request, perPageParam);
+  const { perPage } = cookie;
+
+  try {
+    const { kraals, totalKraals } = await getKraals({
+      userId,
+      page,
+      perPage,
+      orderBy,
+      orderDirection,
+    });
+
+    const totalPages = Math.ceil(totalKraals / perPage);
+
+    return {
+      kraals,
+      totalKraals,
+      totalPages,
+      perPage,
+      page,
+      cookie,
+    };
+  } catch (cause) {
+    throw new ShelfError({
+      cause,
+      message: "Fail to fetch paginated and filterable kraals",
+      additionalData: { organizationId: userId, paramsValues },
       label,
     });
   }

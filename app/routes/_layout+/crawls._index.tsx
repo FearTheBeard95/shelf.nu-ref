@@ -43,7 +43,10 @@ import {
   useSearchParamHasValue,
 } from "~/hooks/search-params";
 import { useUserRoleHelper } from "~/hooks/user-user-role-helper";
-import { bulkDeleteAssets } from "~/modules/asset/service.server";
+import {
+  bulkDeleteAssets,
+  getPaginatedAndFilterableKraals,
+} from "~/modules/asset/service.server";
 import { CurrentSearchParamsSchema } from "~/modules/asset/utils.server";
 import assetCss from "~/styles/assets.css?url";
 import { appendToMetaTitle } from "~/utils/append-to-meta-title";
@@ -108,6 +111,15 @@ export async function loader({ context, request }: LoaderFunctionArgs) {
       return redirect(`/milaka?${cookieParams.toString()}`);
     }
 
+    let [{ kraals, totalKraals, totalPages, page, perPage }] =
+      await Promise.all([
+        getPaginatedAndFilterableKraals({
+          request,
+          userId,
+          filters,
+        }),
+      ]);
+
     const header: HeaderData = {
       title: isPersonalOrg(currentOrganization)
         ? user?.firstName
@@ -127,8 +139,12 @@ export async function loader({ context, request }: LoaderFunctionArgs) {
     return json(
       data({
         header,
-
+        items: kraals,
+        totalItems: totalKraals,
+        totalPages,
         modelName,
+        perPage,
+        page,
         searchFieldLabel: "Search crawls",
         searchFieldTooltip: {
           title: "Search your crawl database",
