@@ -1,4 +1,4 @@
-import type { Category, Asset, Tag, Custody, Kit } from "@prisma/client";
+import type { Tag, Kraal } from "@prisma/client";
 import { AssetStatus } from "@prisma/client";
 import type {
   ActionFunctionArgs,
@@ -11,12 +11,9 @@ import type { ShouldRevalidateFunctionArgs } from "@remix-run/react";
 import { useNavigate } from "@remix-run/react";
 import { z } from "zod";
 import { AssetImage } from "~/components/assets/asset-image";
-import { AssetStatusBadge } from "~/components/assets/asset-status-badge";
 import BulkActionsDropdown from "~/components/assets/bulk-actions-dropdown";
 
 import { StatusFilter } from "~/components/booking/status-filter";
-import DynamicDropdown from "~/components/dynamic-dropdown/dynamic-dropdown";
-import { ChevronRight, KitIcon } from "~/components/icons/library";
 import Header from "~/components/layout/header";
 import type { HeaderData } from "~/components/layout/header/types";
 import type { ListProps } from "~/components/list";
@@ -24,17 +21,10 @@ import { List } from "~/components/list";
 import { ListContentWrapper } from "~/components/list/content-wrapper";
 import { Filters } from "~/components/list/filters";
 import { SortBy } from "~/components/list/filters/sort-by";
-import { Badge } from "~/components/shared/badge";
 import { Button } from "~/components/shared/button";
 import { GrayBadge } from "~/components/shared/gray-badge";
-import { Image } from "~/components/shared/image";
 import { Tag as TagBadge } from "~/components/shared/tag";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "~/components/shared/tooltip";
+
 import { Td, Th } from "~/components/table";
 import When from "~/components/when/when";
 import { db } from "~/database/db.server";
@@ -62,8 +52,6 @@ import {
 } from "~/utils/permissions/permission.data";
 import { userHasPermission } from "~/utils/permissions/permission.validator.client";
 import { requirePermission } from "~/utils/roles.server";
-import { tw } from "~/utils/tw";
-import { resolveTeamMemberName } from "~/utils/user";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: assetCss },
@@ -268,12 +256,12 @@ export default function AssetIndexPage() {
           </>
         </When>
       </Header>
-      <>Crawls here</>
+      <KraalList />
     </>
   );
 }
 
-export const AssetsList = ({
+export const KraalList = ({
   customEmptyState,
   disableTeamMemberFilter,
   disableBulkActions,
@@ -289,7 +277,6 @@ export const AssetsList = ({
   }
   const hasFiltersToClear = useSearchParamHasValue(...searchParams);
   const clearFilters = useClearValueFromParams(...searchParams);
-  const { roles } = useUserRoleHelper();
 
   return (
     <ListContentWrapper>
@@ -314,132 +301,21 @@ export const AssetsList = ({
               <div className="text-gray-500"> | </div>
             </div>
           ) : null}
-
-          <div className="flex w-full items-center justify-around gap-2 p-3 md:w-auto md:justify-end md:p-0 lg:gap-4">
-            <DynamicDropdown
-              trigger={
-                <div className="flex cursor-pointer items-center gap-2">
-                  Categories{" "}
-                  <ChevronRight className="hidden rotate-90 md:inline" />
-                </div>
-              }
-              model={{ name: "category", queryKey: "name" }}
-              label="Filter by category"
-              placeholder="Search categories"
-              initialDataKey="categories"
-              countKey="totalCategories"
-              withoutValueItem={{
-                id: "uncategorized",
-                name: "Uncategorized",
-              }}
-            />
-            <DynamicDropdown
-              trigger={
-                <div className="flex cursor-pointer items-center gap-2">
-                  Tags <ChevronRight className="hidden rotate-90 md:inline" />
-                </div>
-              }
-              model={{ name: "tag", queryKey: "name" }}
-              label="Filter by tag"
-              initialDataKey="tags"
-              countKey="totalTags"
-              withoutValueItem={{
-                id: "untagged",
-                name: "Without tag",
-              }}
-            />
-            <DynamicDropdown
-              trigger={
-                <div className="flex cursor-pointer items-center gap-2">
-                  Locations{" "}
-                  <ChevronRight className="hidden rotate-90 md:inline" />
-                </div>
-              }
-              model={{ name: "location", queryKey: "name" }}
-              label="Filter by location"
-              initialDataKey="locations"
-              countKey="totalLocations"
-              withoutValueItem={{
-                id: "without-location",
-                name: "Without location",
-              }}
-              renderItem={({ metadata }) => (
-                <div className="flex items-center gap-2">
-                  <Image
-                    imageId={metadata.imageId}
-                    alt="img"
-                    className={tw(
-                      "size-6 rounded-[2px] object-cover",
-                      metadata.description ? "rounded-b-none border-b-0" : ""
-                    )}
-                  />
-                  <div>{metadata.name}</div>
-                </div>
-              )}
-            />
-            <When
-              truthy={
-                userHasPermission({
-                  roles,
-                  entity: PermissionEntity.custody,
-                  action: PermissionAction.read,
-                }) && !disableTeamMemberFilter
-              }
-            >
-              <DynamicDropdown
-                trigger={
-                  <div className="flex cursor-pointer items-center gap-2">
-                    Custodian{" "}
-                    <ChevronRight className="hidden rotate-90 md:inline" />
-                  </div>
-                }
-                model={{
-                  name: "teamMember",
-                  queryKey: "name",
-                  deletedAt: null,
-                }}
-                transformItem={(item) => ({
-                  ...item,
-                  id: item.metadata?.userId ? item.metadata.userId : item.id,
-                })}
-                renderItem={(item) => resolveTeamMemberName(item)}
-                label="Filter by custodian"
-                placeholder="Search team members"
-                initialDataKey="teamMembers"
-                countKey="totalTeamMembers"
-                withoutValueItem={{
-                  id: "without-custody",
-                  name: "Without custody",
-                }}
-              />
-            </When>
-          </div>
         </div>
       </Filters>
       <List
-        title="Assets"
-        ItemComponent={ListAssetContent}
+        title="Kraals"
+        ItemComponent={ListKraalContent}
         /**
          * Using remix's navigate is the default behaviour, however it can receive also a custom function
          */
-        navigate={(itemId) => navigate(`/assets/${itemId}`)}
+        navigate={(itemId) => navigate(`/kraal/${itemId}`)}
         bulkActions={disableBulkActions ? undefined : <BulkActionsDropdown />}
         customEmptyStateContent={
           customEmptyState ? customEmptyState : undefined
         }
         headerChildren={
           <>
-            <Th>Category</Th>
-            <Th>Tags</Th>
-            <When
-              truthy={userHasPermission({
-                roles,
-                entity: PermissionEntity.custody,
-                action: PermissionAction.read,
-              })}
-            >
-              <Th>Custodian</Th>
-            </When>
             <Th>Location</Th>
           </>
         }
@@ -448,31 +324,8 @@ export const AssetsList = ({
   );
 };
 
-const ListAssetContent = ({
-  item,
-}: {
-  item: Asset & {
-    kit: Kit;
-    category?: Category;
-    tags?: Tag[];
-    custody: Custody & {
-      custodian: {
-        name: string;
-        user?: {
-          firstName: string | null;
-          lastName: string | null;
-          profilePicture: string | null;
-          email: string | null;
-        };
-      };
-    };
-    location: {
-      name: string;
-    };
-  };
-}) => {
-  const { category, tags, custody, location, kit } = item;
-  const { roles } = useUserRoleHelper();
+const ListKraalContent = ({ item }: { item: Kraal }) => {
+  const { location } = item;
   return (
     <>
       {/* Item */}
@@ -483,106 +336,23 @@ const ListAssetContent = ({
               <AssetImage
                 asset={{
                   assetId: item.id,
-                  mainImage: item.mainImage,
-                  mainImageExpiration: item.mainImageExpiration,
-                  alt: item.title,
+                  mainImage: "", // TODO Add main image to Kraal model
+                  mainImageExpiration: null,
+                  alt: item.name,
                 }}
                 className="size-full rounded-[4px] border object-cover"
               />
-
-              {kit?.id ? (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="absolute -bottom-1 -right-1 flex size-4 items-center justify-center rounded-full border-2 border-white bg-gray-200">
-                        <KitIcon className="size-2" />
-                      </div>
-                    </TooltipTrigger>
-
-                    <TooltipContent side="top">
-                      <p className="text-sm">{kit.name}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              ) : null}
             </div>
             <div className="min-w-[130px]">
               <span className="word-break mb-1 block font-medium">
-                {item.title}
+                {item.name}
               </span>
-              <div>
-                <AssetStatusBadge
-                  status={item.status}
-                  availableToBook={item.availableToBook}
-                />
-              </div>
             </div>
           </div>
         </div>
       </Td>
-
-      {/* Category */}
-      <Td>
-        {category ? (
-          <Badge color={category.color} withDot={false}>
-            {category.name}
-          </Badge>
-        ) : (
-          <Badge color={"#808080"} withDot={false}>
-            {"Uncategorized"}
-          </Badge>
-        )}
-      </Td>
-
-      {/* Tags */}
-      <Td className="text-left">
-        <ListItemTagsColumn tags={tags} />
-      </Td>
-
-      {/* Custodian */}
-      <When
-        truthy={userHasPermission({
-          roles,
-          entity: PermissionEntity.custody,
-          action: PermissionAction.read,
-        })}
-      >
-        <Td>
-          {custody ? (
-            <GrayBadge>
-              <>
-                {custody.custodian?.user ? (
-                  <img
-                    src={
-                      custody.custodian?.user?.profilePicture ||
-                      "/static/images/default_pfp.jpg"
-                    }
-                    className="mr-1 size-4 rounded-full"
-                    alt=""
-                  />
-                ) : null}
-                <span className="mt-px">
-                  {resolveTeamMemberName({
-                    name: custody.custodian.name,
-                    user: custody.custodian?.user
-                      ? {
-                          firstName: custody.custodian?.user?.firstName || null,
-                          lastName: custody.custodian?.user?.lastName || null,
-                          profilePicture:
-                            custody.custodian?.user?.profilePicture || null,
-                          email: custody.custodian?.user?.email || "",
-                        }
-                      : undefined,
-                  })}
-                </span>
-              </>
-            </GrayBadge>
-          ) : null}
-        </Td>
-      </When>
-
       {/* Location */}
-      <Td>{location?.name ? <GrayBadge>{location.name}</GrayBadge> : null}</Td>
+      <Td>{location ? <GrayBadge>{location}</GrayBadge> : null}</Td>
     </>
   );
 };
