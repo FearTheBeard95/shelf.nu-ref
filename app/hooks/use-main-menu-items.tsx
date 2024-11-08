@@ -13,24 +13,9 @@ export function useMainMenuItems() {
       title: "Dashboard",
     },
     {
-      icon: <Icon icon="asset" />,
-      to: "assets",
-      title: "Assets",
-    },
-    {
-      icon: <Icon icon="kit" />,
-      to: "kits",
-      title: "Kits",
-    },
-    {
-      icon: <Icon icon="category" />,
-      to: "categories",
-      title: "Categories",
-    },
-    {
-      icon: <Icon icon="tag" />,
-      to: "tags",
-      title: "Tags",
+      icon: <Icon icon="rows" />,
+      to: "kraals",
+      title: "Kraals",
     },
     {
       icon: <Icon icon="location" />,
@@ -41,16 +26,6 @@ export function useMainMenuItems() {
       icon: <Icon icon="calendar" />,
       to: "calendar",
       title: "Calendar",
-    },
-    {
-      icon: <Icon icon="bookings" />,
-      to: "bookings",
-      title: "Bookings",
-    },
-    {
-      icon: <Icon icon="user" />,
-      to: "/settings/team",
-      title: "Team",
     },
   ];
   let menuItemsBottom = [
