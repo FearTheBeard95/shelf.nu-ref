@@ -142,6 +142,67 @@ export async function getKraal<T extends Prisma.KraalInclude | undefined>({
   }
 }
 
+export async function getPaginatedFilteredKraalCattle({
+  request,
+  kraalId,
+  userId,
+  filters = "",
+}: {
+  request: LoaderFunctionArgs["request"];
+  kraalId: Kraal["id"];
+  userId: User["id"];
+  filters?: string;
+}) {
+  const currentFilterParams = new URLSearchParams(filters);
+  const searchParams = filters
+    ? currentFilterParams
+    : getCurrentSearchParams(request);
+
+  const paramsValues = getParamsValues(searchParams);
+  const { page, perPageParam, orderBy, orderDirection } = paramsValues;
+
+  const cookie = await updateCookieWithPerPage(request, perPageParam);
+  const { perPage } = cookie;
+  try {
+    let where: Prisma.KraalWhereInput = {
+      id: kraalId,
+      userId,
+    };
+    const kraal = await db.kraal.findFirstOrThrow({
+      where,
+      include: {
+        cattleKraalAssignments: {
+          where: { endDate: null },
+          include: {
+            cattle: true,
+          },
+        },
+      },
+    });
+
+    return {
+      kraal,
+      cattle: kraal.cattleKraalAssignments.map((c) => c.cattle),
+      totalCattle: kraal.cattleKraalAssignments.length,
+      totalPages: Math.ceil(kraal.cattleKraalAssignments.length / perPage),
+      page,
+      perPage,
+      orderBy,
+      orderDirection,
+    };
+  } catch (cause) {
+    throw new ShelfError({
+      cause,
+      title: "Kraal cattle not found",
+      message:
+        "The cattle you are trying to access does not exist or you do not have permission to access it.",
+      additionalData: { kraalId, userId },
+      label,
+      shouldBeCaptured: !isNotFoundError(cause),
+    });
+  }
+}
+
 /** This is used by both  getAssetsFromView & getAssets
  * Those are the statuses that are considered unavailable for booking assets
  */
