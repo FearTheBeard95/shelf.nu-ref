@@ -161,8 +161,8 @@ export default function KraalDetailsPage() {
 
   let items = [
     { to: "overview", content: "Overview" },
-    { to: "activity", content: "Activity" },
-    { to: "bookings", content: "Bookings" },
+    { to: "cattle", content: "Cattle" },
+    { to: "activity", content: "activity" },
   ];
 
   /** Due to some conflict of types between prisma and remix, we need to use the SerializeFrom type
