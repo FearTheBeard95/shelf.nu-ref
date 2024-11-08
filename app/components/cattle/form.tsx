@@ -122,11 +122,7 @@ export const CattleForm = ({
           </div>
         </div>
 
-        <FormRow
-          rowLabel={"Name"}
-          className="border-b-0 pb-[10px]"
-          required={true}
-        >
+        <FormRow rowLabel={"Name"} className="border-b-0 pb-[10px]" required>
           <Input
             label="Name"
             hideLabel
@@ -139,7 +135,7 @@ export const CattleForm = ({
             onChange={updateDynamicTitle}
             className="w-full"
             defaultValue={name || ""}
-            required={true}
+            required
           />
         </FormRow>
 
@@ -152,6 +148,7 @@ export const CattleForm = ({
               later.
             </p>
           }
+          required={true}
         >
           <InnerLabel hideLg>Gender</InnerLabel>
           <Select
@@ -185,6 +182,7 @@ export const CattleForm = ({
           rowLabel={"Breed"}
           className={"border-b-0"}
           subHeading={<p>Choose the breed of the cattle.</p>}
+          required={true}
         >
           <InnerLabel hideLg>Breed</InnerLabel>
           <Select
@@ -214,11 +212,7 @@ export const CattleForm = ({
         </FormRow>
 
         {/* Tag Number */}
-        <FormRow
-          rowLabel={"Tag Number"}
-          className="border-b-0 pb-[10px]"
-          required={true}
-        >
+        <FormRow rowLabel={"Tag Number"} className="border-b-0 pb-[10px]">
           <Input
             label="Tag Number"
             hideLabel
@@ -231,7 +225,6 @@ export const CattleForm = ({
             autoFocus
             className="w-full"
             defaultValue={tagNumber || ""}
-            required={true}
           />
         </FormRow>
 
@@ -366,7 +359,7 @@ export const CattleForm = ({
             rowLabel="Kraal"
             subHeading={<p>Select the kraal to which the cattle belongs to.</p>}
             className="py-[10px]"
-            required={zodFieldIsRequired(FormSchema.shape.sireId)}
+            required={true}
           >
             <input type="hidden" name="kraalId" value={kraalId || ""} />
             {!kraalId && (
@@ -387,6 +380,7 @@ export const CattleForm = ({
                     <div>{name}</div>
                   </div>
                 )}
+                required={true}
               />
             )}
           </FormRow>

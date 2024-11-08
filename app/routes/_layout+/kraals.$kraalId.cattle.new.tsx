@@ -213,6 +213,12 @@ export async function action({ context, request }: LoaderFunctionArgs) {
   }
 }
 
-export default function NewAssetPage() {
-  return <CattleForm />;
+export default function CreateCattlePage() {
+  return (
+    <>
+      <div>
+        <CattleForm />
+      </div>
+    </>
+  );
 }
