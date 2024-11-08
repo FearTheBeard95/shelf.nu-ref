@@ -52,6 +52,7 @@ model User {
   // Relationships
 
   assets            Asset[]
+  cattle            Cattle[]
   kraals            Kraal[]
   categories        Category[]
   notes             Note[]
@@ -80,22 +81,97 @@ model User {
 }
 
 model Kraal {
-  id                  String      @id @default(cuid())
-  name                String
-  capacity            Int?
-  description         String?
+  id          String      @id @default(cuid())
+  name        String
+  capacity    Int?
+  description String?
 
-  // Datetime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  // Timestamps
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
   // Relationships
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userId         String
-  location       Location?    @relation(fields: [locationId], references: [id])
-  locationId     String?
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId      String
+  location    Location?   @relation(fields: [locationId], references: [id])
+  locationId  String?
+
+  // Assignment
+  cattleKraalAssignments  CattleKraalAssignment[]
 
   @@unique([name])
+}
+
+model Cattle {
+  id                  String         @id @default(cuid())
+  name                String?
+  tagNumber           String?        @unique
+  breed               Breed
+  gender              Gender
+  isOx                Boolean?
+  dateOfBirth         DateTime?
+  healthStatus        String?
+  vaccinationRecords  String?
+
+  // Parent Relationships
+  sireId              String?
+  damId               String?
+  sire                Cattle?        @relation("SireOffspring", fields: [sireId], references: [id])
+  dam                 Cattle?        @relation("DamOffspring", fields: [damId], references: [id])
+
+  // Offspring Relationships
+  offspringAsSire     Cattle[]       @relation("SireOffspring")
+  offspringAsDam      Cattle[]       @relation("DamOffspring")
+
+  // Image Fields
+  mainImageId         String?        @unique
+  mainImage           CattleImage?   @relation("MainImage", fields: [mainImageId], references: [id])
+  images              CattleImage[]  @relation("GalleryImages")
+
+  // Timestamps
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  // User Relationship
+  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId              String
+
+  // Assignments
+  cattleKraalAssignments CattleKraalAssignment[]
+
+  @@index([sireId])
+  @@index([damId])
+  @@index([mainImageId])
+}
+
+model CattleImage {
+  id         String   @id @default(cuid())
+  contentType String
+  altText     String?
+  blob        Bytes
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  cattle     Cattle?  @relation("GalleryImages", fields: [cattleId], references: [id])
+  cattleId   String?
+  mainCattle Cattle?  @relation("MainImage")
+
+  @@index([cattleId])
+}
+
+model CattleKraalAssignment {
+  id        String    @id @default(cuid())
+  cattleId  String
+  kraalId   String
+  startDate DateTime
+  endDate   DateTime?
+
+  cattle    Cattle    @relation(fields: [cattleId], references: [id])
+  kraal     Kraal     @relation(fields: [kraalId], references: [id])
+
+  @@index([cattleId])
+  @@index([kraalId])
 }
 
 model Asset {
@@ -146,6 +222,29 @@ view AssetSearchView {
 
   // Datetime
   createdAt DateTime @default(now())
+}
+
+enum Breed {
+  ANGUS
+  HEREFORD
+  HOLSTEIN
+  JERSEY
+  CHAROLAIS
+  SIMMENTAL
+  BRAHMAN
+  LIMOUSIN
+  GELBVIEH
+  SHORTHORN
+  BRANGUS
+  BELTED_GALLOWAY
+  LONGHORN
+  GUERNSEY
+  AYRSHIRE
+}
+
+enum Gender {
+  Male
+  Female
 }
 
 enum AssetStatus {
