@@ -1578,6 +1578,87 @@ export async function getAllEntriesForCreateAndEdit({
   }
 }
 
+export async function getAllEntriesForCreateAndEditCattle({
+  userId,
+}: {
+  userId: User["id"];
+}) {
+  try {
+    const [
+      femaleCattle,
+      totalFemaleCattle,
+      maleCattle,
+      totalMaleCattle,
+      kraals,
+      totalKraals,
+    ] = await Promise.all([
+      /**
+       * Get all female cattle
+       */
+      db.cattle.findMany({
+        where: {
+          gender: "Female",
+        },
+      }),
+      /**
+       * Total number of female cattle
+       */
+      db.cattle.count({
+        where: {
+          gender: "Female",
+        },
+      }),
+      /**
+       * Get all male cattle
+       */
+      db.cattle.findMany({
+        where: {
+          gender: "Male",
+        },
+      }),
+      /**
+       * Total number of female cattle
+       */
+      db.cattle.count({
+        where: {
+          gender: "Male",
+        },
+      }),
+      /**
+       * Get all Kraals for user
+       */
+      db.kraal.findMany({
+        where: {
+          userId,
+        },
+      }),
+      /**
+       * Total number of kraals
+       */
+      db.kraal.findMany({
+        where: {
+          userId,
+        },
+      }),
+    ]);
+
+    return {
+      kraals,
+      maleCattle,
+      totalKraals,
+      femaleCattle,
+      totalMaleCattle,
+      totalFemaleCattle,
+    };
+  } catch (cause) {
+    throw new ShelfError({
+      cause,
+      message: "Fail to get all entries for cattle create and edit",
+      label,
+    });
+  }
+}
+
 export async function getPaginatedAndFilterableKraals({
   request,
   userId,
