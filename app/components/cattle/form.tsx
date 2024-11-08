@@ -30,6 +30,25 @@ import {
   TooltipTrigger,
 } from "../shared/tooltip";
 
+const BREEDS = [
+  "ANGUS",
+  "HEREFORD",
+  "HOLSTEIN",
+  "JERSEY",
+  "CHAROLAIS",
+  "SIMMENTAL",
+  "BRAHMAN",
+  "LIMOUSIN",
+  "GELBVIEH",
+  "SHORTHORN",
+  "BRANGUS",
+  "BELTED_GALLOWAY",
+  "LONGHORN",
+  "GUERNSEY",
+  "AYRSHIRE",
+];
+const HEALTH_STATUS = ["Healthy", "Sick", "Injured", "Dead"];
+
 export const NewCattleFormSchema = z.object({
   name: z
     .string()
@@ -37,7 +56,23 @@ export const NewCattleFormSchema = z.object({
     .transform((val) => val.trim()), // We trim to avoid white spaces at start and end
 
   tagNumber: z.string().transform((val) => val.trim()),
-  breed: z.enum(["Brahman", "Simmental", "Hereford", "Angus", "Other"]),
+  breed: z.enum([
+    "ANGUS",
+    "HEREFORD",
+    "HOLSTEIN",
+    "JERSEY",
+    "CHAROLAIS",
+    "SIMMENTAL",
+    "BRAHMAN",
+    "LIMOUSIN",
+    "GELBVIEH",
+    "SHORTHORN",
+    "BRANGUS",
+    "BELTED_GALLOWAY",
+    "LONGHORN",
+    "GUERNSEY",
+    "AYRSHIRE",
+  ]),
   gender: z.enum(["Male", "Female"]),
   /** This holds the value of the current location. We need it for comparison reasons on the server.
    * We send it as part of the form data and compare it with the current location of the asset and prevent querying the database if it's the same.
@@ -48,6 +83,7 @@ export const NewCattleFormSchema = z.object({
   vaccinationRecords: z.string().optional(),
   sireId: z.string().optional(),
   damId: z.string().optional(),
+  kraalId: z.string().optional(),
   addAnother: z
     .string()
     .optional()
@@ -70,8 +106,6 @@ interface Props {
   kraalId?: Cattle["id"];
 }
 
-const BREEDS = ["Brahman", "Simmental", "Hereford", "Angus", "Other"];
-const HEALTH_STATUS = ["Healthy", "Sick", "Injured", "Dead"];
 export const CattleForm = ({
   name,
   tagNumber,
@@ -186,7 +220,7 @@ export const CattleForm = ({
         >
           <InnerLabel hideLg>Breed</InnerLabel>
           <Select
-            defaultValue={breed || "Brahman"}
+            defaultValue={breed || "BRAHMAN"}
             disabled={disabled}
             name={zo.fields.breed()}
           >
@@ -330,9 +364,9 @@ export const CattleForm = ({
             rowLabel="Female Parent"
             subHeading={<p>Select the female parent of the cattle.</p>}
             className="py-[10px]"
-            required={zodFieldIsRequired(FormSchema.shape.sireId)}
+            required={zodFieldIsRequired(FormSchema.shape.damId)}
           >
-            <input type="hidden" name="sireId" value={damId || ""} />
+            <input type="hidden" name="damId" value={damId || ""} />
             <DynamicSelect
               disabled={disabled}
               fieldName="damId"

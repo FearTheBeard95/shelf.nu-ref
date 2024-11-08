@@ -13,6 +13,7 @@ import type {
   Booking,
   Kit,
   Kraal,
+  Cattle,
 } from "@prisma/client";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import type {
@@ -866,6 +867,81 @@ export async function createKraal({
   } catch (cause) {
     throw maybeUniqueConstraintViolation(cause, "Kraal", {
       additionalData: { userId },
+    });
+  }
+}
+
+export async function createCattle({
+  name,
+  gender,
+  breed,
+  dateOfBirth,
+  healthStatus,
+  tagNumber,
+  isOx,
+  vaccinationRecords,
+  damId,
+  sireId,
+  kraalId,
+  userId,
+}: Pick<
+  Cattle,
+  | "name"
+  | "gender"
+  | "breed"
+  | "dateOfBirth"
+  | "healthStatus"
+  | "tagNumber"
+  | "isOx"
+  | "vaccinationRecords"
+  | "damId"
+  | "sireId"
+  | "userId"
+> & {
+  kraalId: Kraal["id"] | null;
+}) {
+  try {
+    const data = {
+      name,
+      gender,
+      breed,
+      dateOfBirth,
+      healthStatus,
+      tagNumber,
+      isOx,
+      vaccinationRecords,
+      damId,
+      sireId,
+      userId,
+    };
+
+    // Create the cattle
+    const cattle = await db.cattle.create({
+      data,
+      include: {
+        dam: true,
+        sire: true,
+      },
+    });
+    // Create the cattle kraal assignment
+
+    if (kraalId) {
+      await db.cattleKraalAssignment.create({
+        data: {
+          cattleId: cattle.id,
+          kraalId,
+          startDate: new Date(),
+        },
+      });
+    }
+
+    return cattle;
+  } catch (error) {
+    throw new ShelfError({
+      cause: error,
+      title: "Failed to create cattle",
+      message: "Failed to create cattle",
+      label,
     });
   }
 }

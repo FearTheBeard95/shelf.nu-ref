@@ -1,45 +1,32 @@
 import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { json, redirect, redirectDocument } from "@remix-run/node";
-import { NewAssetFormSchema } from "~/components/assets/form";
-import { CattleForm } from "~/components/cattle/form";
+import { useLoaderData } from "react-router";
+import { CattleForm, NewCattleFormSchema } from "~/components/cattle/form";
 import {
-  createAsset,
+  createCattle,
   getAllEntriesForCreateAndEditCattle,
-  updateAssetMainImage,
 } from "~/modules/asset/service.server";
-import { getActiveCustomFields } from "~/modules/custom-field/service.server";
-import { createNote } from "~/modules/note/service.server";
 import { assertWhetherQrBelongsToCurrentOrganization } from "~/modules/qr/service.server";
-import { buildTagsSet } from "~/modules/tag/service.server";
 import { appendToMetaTitle } from "~/utils/append-to-meta-title";
-import {
-  extractCustomFieldValuesFromPayload,
-  mergedSchema,
-} from "~/utils/custom-fields";
 import { sendNotification } from "~/utils/emitter/send-notification.server";
 import { makeShelfError } from "~/utils/error";
-import {
-  assertIsPost,
-  data,
-  error,
-  getCurrentSearchParams,
-  parseData,
-} from "~/utils/http.server";
+import { assertIsPost, data, error, parseData } from "~/utils/http.server";
 import {
   PermissionAction,
   PermissionEntity,
 } from "~/utils/permissions/permission.data";
 import { requirePermission } from "~/utils/roles.server";
-import { slugify } from "~/utils/slugify";
 
 const title = "New cattle";
 const header = {
   title,
 };
 
-export async function loader({ context, request }: LoaderFunctionArgs) {
+export async function loader({ context, request, params }: LoaderFunctionArgs) {
   const authSession = context.getSession();
   const { userId } = authSession;
+
+  const { kraalId } = params;
 
   try {
     const { organizationId } = await requirePermission({
@@ -77,6 +64,7 @@ export async function loader({ context, request }: LoaderFunctionArgs) {
         femaleCattle,
         totalMaleCattle,
         totalFemaleCattle,
+        kraalId,
       })
     );
   } catch (cause) {
@@ -100,31 +88,7 @@ export async function action({ context, request }: LoaderFunctionArgs) {
   try {
     assertIsPost(request);
 
-    const { organizationId } = await requirePermission({
-      userId,
-      request,
-      entity: PermissionEntity.asset,
-      action: PermissionAction.create,
-    });
-
-    const searchParams = getCurrentSearchParams(request);
-
-    const customFields = await getActiveCustomFields({
-      organizationId,
-      category: searchParams.get("category"),
-    });
-
-    const FormSchema = mergedSchema({
-      baseSchema: NewAssetFormSchema,
-      customFields: customFields.map((cf) => ({
-        id: cf.id,
-        name: slugify(cf.name),
-        helpText: cf?.helpText || "",
-        required: cf.required,
-        type: cf.type.toLowerCase() as "text" | "number" | "date" | "boolean",
-        options: cf.options,
-      })),
-    });
+    const FormSchema = NewCattleFormSchema;
 
     /** Here we need to clone the request as we need 2 different streams:
      * 1. Access form data for creating asset
@@ -138,43 +102,42 @@ export async function action({ context, request }: LoaderFunctionArgs) {
 
     const payload = parseData(formData, FormSchema);
 
-    const customFieldsValues = extractCustomFieldValuesFromPayload({
-      payload,
-      customFieldDef: customFields,
-    });
-
     const {
-      title,
-      description,
-      category,
-      qrId,
-      newLocationId,
-      valuation,
+      name,
+      gender,
+      breed,
+      dateOfBirth,
+      healthStatus,
+      tagNumber,
+      isOx,
+      vaccinationRecords,
+      damId,
+      sireId,
+      kraalId,
       addAnother,
     } = payload;
 
-    /** This checks if tags are passed and build the  */
-    const tags = buildTagsSet(payload.tags);
-
-    const asset = await createAsset({
-      organizationId,
-      title,
-      description,
-      userId: authSession.userId,
-      categoryId: category,
-      locationId: newLocationId,
-      qrId,
-      tags,
-      valuation,
-      customFieldsValues,
+    await createCattle({
+      name,
+      gender,
+      breed,
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+      healthStatus,
+      tagNumber,
+      isOx,
+      vaccinationRecords: vaccinationRecords || null,
+      damId: damId || null,
+      sireId: sireId || null,
+      kraalId: kraalId || null,
+      userId,
     });
 
-    // Not sure how to handle this failing as the asset is already created
-    await updateAssetMainImage({
-      request,
-      assetId: asset.id,
-      userId: authSession.userId,
-    });
+    // // Not sure how to handle this failing as the asset is already created
+    // await updateAssetMainImage({
+    //   request,
+    //   assetId: asset.id,
+    //   userId: authSession.userId,
+    // });
 
     sendNotification({
       title: "Cattle created",
@@ -183,30 +146,12 @@ export async function action({ context, request }: LoaderFunctionArgs) {
       senderId: authSession.userId,
     });
 
-    await createNote({
-      content: `Cattle was created by **${asset.user.firstName?.trim()} ${asset.user.lastName?.trim()}**`,
-      type: "UPDATE",
-      userId: authSession.userId,
-      assetId: asset.id,
-    });
-
-    if (asset.location) {
-      await createNote({
-        content: `**${asset.user.firstName?.trim()} ${asset.user.lastName?.trim()}** set the location of **${asset.title?.trim()}** to *[${asset.location.name.trim()}](/locations/${
-          asset.location.id
-        })**`,
-        type: "UPDATE",
-        userId: authSession.userId,
-        assetId: asset.id,
-      });
-    }
-
     /** If the user used the add-another button, we reload the document to reset the form */
     if (addAnother) {
-      return redirectDocument(`/cattle/new?`);
+      return redirectDocument(`/kraals/${kraalId}/cattle/new`);
     }
 
-    return redirect(`/cattle`);
+    return redirect(`/kraals/${kraalId}/cattle`);
   } catch (cause) {
     const reason = makeShelfError(cause, { userId });
     return json(error(reason), { status: reason.status });
@@ -214,10 +159,14 @@ export async function action({ context, request }: LoaderFunctionArgs) {
 }
 
 export default function CreateCattlePage() {
+  const data = useLoaderData() as {
+    kraalId: string | undefined;
+  };
+
   return (
     <>
       <div>
-        <CattleForm />
+        <CattleForm kraalId={data.kraalId} />
       </div>
     </>
   );
