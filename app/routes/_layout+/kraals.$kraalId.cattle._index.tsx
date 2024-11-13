@@ -151,7 +151,7 @@ export default function KraalCattleIndexPage() {
   );
 }
 
-const CattleList = ({
+export const CattleList = ({
   customEmptyState,
   disableTeamMemberFilter,
   disableBulkActions,
@@ -199,7 +199,7 @@ const CattleList = ({
         /**
          * Using remix's navigate is the default behaviour, however it can receive also a custom function
          */
-        navigate={(itemId) => navigate(`/kraals/${itemId}`)}
+        navigate={(itemId) => navigate(`/cattle/${itemId}`)}
         bulkActions={disableBulkActions ? undefined : <BulkActionsDropdown />}
         customEmptyStateContent={
           customEmptyState ? customEmptyState : undefined
@@ -216,7 +216,7 @@ const CattleList = ({
   );
 };
 
-const ListCattleContent = ({ item }: { item: Cattle }) => {
+export const ListCattleContent = ({ item }: { item: Cattle }) => {
   const { tagNumber, breed, gender, name } = item;
 
   return (
