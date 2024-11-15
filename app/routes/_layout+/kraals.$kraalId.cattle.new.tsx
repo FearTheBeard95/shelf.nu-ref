@@ -6,16 +6,19 @@ import {
   createCattle,
   getAllEntriesForCreateAndEditCattle,
 } from "~/modules/asset/service.server";
-import { assertWhetherQrBelongsToCurrentOrganization } from "~/modules/qr/service.server";
+import { updateCattleMainImage } from "~/modules/cattle/service.server";
+import { getActiveCustomFields } from "~/modules/custom-field/service.server";
 import { appendToMetaTitle } from "~/utils/append-to-meta-title";
+import { mergedSchema } from "~/utils/custom-fields";
 import { sendNotification } from "~/utils/emitter/send-notification.server";
 import { makeShelfError } from "~/utils/error";
-import { assertIsPost, data, error, parseData } from "~/utils/http.server";
+import { data, error, parseData } from "~/utils/http.server";
 import {
   PermissionAction,
   PermissionEntity,
 } from "~/utils/permissions/permission.data";
 import { requirePermission } from "~/utils/roles.server";
+import { slugify } from "~/utils/slugify";
 
 const title = "New cattle";
 const header = {
@@ -32,15 +35,11 @@ export async function loader({ context, request, params }: LoaderFunctionArgs) {
     const { organizationId } = await requirePermission({
       userId,
       request,
-      entity: PermissionEntity.asset,
+      entity: PermissionEntity.cattle,
       action: PermissionAction.create,
     });
-    /**
-     * We need to check if the QR code passed in the URL belongs to the current org
-     * This is relevant whenever the user is trying to link a new asset with an existing QR code
-     * */
-    await assertWhetherQrBelongsToCurrentOrganization({
-      request,
+
+    const customFields = await getActiveCustomFields({
       organizationId,
     });
 
@@ -59,12 +58,13 @@ export async function loader({ context, request, params }: LoaderFunctionArgs) {
       data({
         kraals,
         header,
+        kraalId,
         maleCattle,
         totalKraals,
+        customFields,
         femaleCattle,
         totalMaleCattle,
         totalFemaleCattle,
-        kraalId,
       })
     );
   } catch (cause) {
@@ -86,9 +86,12 @@ export async function action({ context, request }: LoaderFunctionArgs) {
   const { userId } = authSession;
 
   try {
-    assertIsPost(request);
-
-    const FormSchema = NewCattleFormSchema;
+    const { organizationId } = await requirePermission({
+      userId,
+      request,
+      entity: PermissionEntity.asset,
+      action: PermissionAction.update,
+    });
 
     /** Here we need to clone the request as we need 2 different streams:
      * 1. Access form data for creating asset
@@ -98,9 +101,27 @@ export async function action({ context, request }: LoaderFunctionArgs) {
      */
     const clonedRequest = request.clone();
 
+    const customFields = await getActiveCustomFields({
+      organizationId,
+    });
+
+    const FormSchema = mergedSchema({
+      baseSchema: NewCattleFormSchema,
+      customFields: customFields.map((cf) => ({
+        id: cf.id,
+        name: slugify(cf.name),
+        helpText: cf?.helpText || "",
+        required: cf.required,
+        type: cf.type.toLowerCase() as "text" | "number" | "date" | "boolean",
+        options: cf.options,
+      })),
+    });
+
     const formData = await clonedRequest.formData();
 
-    const payload = parseData(formData, FormSchema);
+    const payload = parseData(formData, FormSchema, {
+      additionalData: { userId, organizationId },
+    });
 
     const {
       name,
@@ -117,7 +138,7 @@ export async function action({ context, request }: LoaderFunctionArgs) {
       addAnother,
     } = payload;
 
-    await createCattle({
+    const newCattle = await createCattle({
       name,
       gender,
       breed,
@@ -132,12 +153,12 @@ export async function action({ context, request }: LoaderFunctionArgs) {
       userId,
     });
 
-    // // Not sure how to handle this failing as the asset is already created
-    // await updateAssetMainImage({
-    //   request,
-    //   assetId: asset.id,
-    //   userId: authSession.userId,
-    // });
+    // Not sure how to handle this failing as the asset is already created
+    await updateCattleMainImage({
+      request,
+      cattleId: newCattle.id,
+      userId,
+    });
 
     sendNotification({
       title: "Cattle created",

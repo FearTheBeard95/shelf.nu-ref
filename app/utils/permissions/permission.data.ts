@@ -15,6 +15,8 @@ export enum PermissionAction {
 }
 export enum PermissionEntity {
   asset = "asset",
+  cattle = "cattle",
+  kraal = "kraal",
   qr = "qr",
   booking = "booking",
   tag = "tag",
@@ -39,6 +41,8 @@ export const Role2PermissionMap: {
 } = {
   [OrganizationRoles.BASE]: {
     [PermissionEntity.asset]: [PermissionAction.read],
+    [PermissionEntity.cattle]: [PermissionAction.read],
+    [PermissionEntity.kraal]: [PermissionAction.read],
     [PermissionEntity.booking]: [
       PermissionAction.create,
       PermissionAction.read,
@@ -64,6 +68,8 @@ export const Role2PermissionMap: {
   },
   [OrganizationRoles.SELF_SERVICE]: {
     [PermissionEntity.asset]: [PermissionAction.read],
+    [PermissionEntity.cattle]: [PermissionAction.read],
+    [PermissionEntity.kraal]: [PermissionAction.read],
     [PermissionEntity.booking]: [
       PermissionAction.create,
       PermissionAction.read,

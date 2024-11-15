@@ -46,7 +46,7 @@ export async function loader({ context, request, params }: LoaderFunctionArgs) {
     const { organizationId } = await requirePermission({
       userId,
       request,
-      entity: PermissionEntity.asset,
+      entity: PermissionEntity.cattle,
       action: PermissionAction.update,
     });
     const { cattle } = await getCattle({ id });
