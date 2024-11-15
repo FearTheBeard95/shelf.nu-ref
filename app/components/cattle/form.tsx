@@ -98,7 +98,7 @@ interface Props {
   breed?: Cattle["breed"];
   gender?: Cattle["gender"];
   isOx?: Cattle["isOx"];
-  dateOfBirth?: Cattle["dateOfBirth"];
+  dateOfBirth?: string;
   healthStatus?: Cattle["healthStatus"];
   vaccinationRecords?: Cattle["vaccinationRecords"];
   sireId?: Cattle["sireId"];
@@ -273,7 +273,12 @@ export const CattleForm = ({
             disabled={disabled}
             hideLabel
             required
-            defaultValue={dateOfBirth?.toString() || ""}
+            defaultValue={
+              dateOfBirth
+                ? new Date(dateOfBirth).toISOString().split("T")[0]
+                : undefined
+            }
+            className="w-full"
           />
         </FormRow>
 
@@ -338,7 +343,7 @@ export const CattleForm = ({
             className="border-b-0 py-[10px]"
             required={zodFieldIsRequired(FormSchema.shape.sireId)}
           >
-            <input type="hidden" name="sireId" value={sireId || ""} />
+            <input type="hidden" name="sireId" value={sireId || undefined} />
             <DynamicSelect
               disabled={disabled}
               fieldName="sireId"
@@ -366,7 +371,7 @@ export const CattleForm = ({
             className="py-[10px]"
             required={zodFieldIsRequired(FormSchema.shape.damId)}
           >
-            <input type="hidden" name="damId" value={damId || ""} />
+            <input type="hidden" name="damId" value={damId || undefined} />
             <DynamicSelect
               disabled={disabled}
               fieldName="damId"
@@ -395,7 +400,7 @@ export const CattleForm = ({
             className="py-[10px]"
             required={true}
           >
-            <input type="hidden" name="kraalId" value={kraalId || ""} />
+            <input type="hidden" name="kraalId" value={kraalId || undefined} />
             <DynamicSelect
               disabled={disabled}
               fieldName="kraalId"

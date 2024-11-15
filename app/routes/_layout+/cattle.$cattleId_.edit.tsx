@@ -1,8 +1,4 @@
-import {
-  json,
-  unstable_parseMultipartFormData,
-  unstable_createMemoryUploadHandler,
-} from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import type {
   ActionFunctionArgs,
   MetaFunction,
@@ -10,15 +6,13 @@ import type {
 } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { useAtomValue } from "jotai";
-import invariant from "tiny-invariant";
 import { z } from "zod";
 import { dynamicTitleAtom } from "~/atoms/dynamic-title-atom";
 import { CattleForm, NewCattleFormSchema } from "~/components/cattle/form";
 import Header from "~/components/layout/header";
 import type { HeaderData } from "~/components/layout/header/types";
 import { getAllEntriesForCreateAndEditCattle } from "~/modules/asset/service.server";
-import { getCattle } from "~/modules/cattle/service.server";
-import { updateLocation } from "~/modules/location/service.server";
+import { getCattle, updateCattle } from "~/modules/cattle/service.server";
 import { appendToMetaTitle } from "~/utils/append-to-meta-title";
 import { sendNotification } from "~/utils/emitter/send-notification.server";
 import { makeShelfError } from "~/utils/error";
@@ -28,7 +22,6 @@ import {
   PermissionEntity,
 } from "~/utils/permissions/permission.data";
 import { requirePermission } from "~/utils/roles.server";
-import { MAX_SIZE } from "./locations.new";
 
 export async function loader({ context, params }: LoaderFunctionArgs) {
   const authSession = context.getSession();
@@ -104,45 +97,54 @@ export async function action({ context, request, params }: ActionFunctionArgs) {
       entity: PermissionEntity.location,
       action: PermissionAction.update,
     });
-    const clonedRequest = request.clone();
 
     const payload = parseData(await request.formData(), NewCattleFormSchema, {
       additionalData: { userId, organizationId, id },
     });
 
-    const { name } = payload;
-
-    const formDataFile = await unstable_parseMultipartFormData(
-      clonedRequest,
-      unstable_createMemoryUploadHandler({ maxPartSize: MAX_SIZE })
-    );
-
-    const file = formDataFile.get("image") as File | null;
-    invariant(file instanceof File, "file not the right type");
-
-    await updateLocation({
-      id,
-      userId: authSession.userId,
+    const {
       name,
-      image: file || null,
-      organizationId,
+      sireId,
+      damId,
+      kraalId,
+      isOx,
+      gender,
+      dateOfBirth,
+      vaccinationRecords,
+      healthStatus,
+      tagNumber,
+    } = payload;
+
+    await updateCattle({
+      id,
+      userId,
+      name,
+      sireId,
+      damId,
+      kraalId,
+      isOx,
+      gender,
+      dateOfBirth,
+      vaccinationRecords,
+      healthStatus,
+      tagNumber,
     });
 
     sendNotification({
-      title: "Location updated",
-      message: "Your location  has been updated successfully",
+      title: "Cattle updated",
+      message: "Your cattle has been updated successfully",
       icon: { name: "success", variant: "success" },
       senderId: userId,
     });
 
-    return json(data({ success: true }));
+    return redirect(`/cattle/${id}`);
   } catch (cause) {
     const reason = makeShelfError(cause, { userId, id });
     return json(error(reason), { status: reason.status });
   }
 }
 
-export default function LocationEditPage() {
+export default function CattleEditPage() {
   const name = useAtomValue(dynamicTitleAtom);
   const hasName = name !== "";
   const { cattle } = useLoaderData<typeof loader>();
@@ -152,8 +154,9 @@ export default function LocationEditPage() {
       <Header title={hasName ? name : cattle.name} />
       <div className=" items-top flex justify-between">
         <CattleForm
+          id={cattle.id}
           name={cattle.name}
-          dateOfBirth={cattle.dateOfBirth ? new Date(cattle.dateOfBirth) : null}
+          dateOfBirth={cattle.dateOfBirth || undefined}
           tagNumber={cattle.tagNumber}
           breed={cattle.breed}
           damId={cattle.damId}
