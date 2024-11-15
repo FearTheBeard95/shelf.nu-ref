@@ -49,6 +49,10 @@ export async function getCattle(
       },
     });
 
+    const kraalId = cattle.cattleKraalAssignments.find(
+      (kraal) => kraal.endDate === null
+    )?.kraalId;
+
     const age = cattle.dateOfBirth
       ? Math.round(new Date().getFullYear() - cattle.dateOfBirth.getFullYear())
       : null;
@@ -61,6 +65,7 @@ export async function getCattle(
         ...cattle,
         age,
         totalChildren,
+        kraalId,
       },
     };
   } catch (cause) {

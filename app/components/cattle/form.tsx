@@ -396,27 +396,25 @@ export const CattleForm = ({
             required={true}
           >
             <input type="hidden" name="kraalId" value={kraalId || ""} />
-            {!kraalId && (
-              <DynamicSelect
-                disabled={disabled}
-                fieldName="kraalId"
-                defaultValue={kraalId || undefined}
-                model={{ name: "kraal", queryKey: "name" }}
-                contentLabel="Kraal"
-                label="Kraal"
-                hideLabel
-                initialDataKey="kraals"
-                countKey="totalKraals"
-                closeOnSelect
-                allowClear
-                renderItem={({ name }) => (
-                  <div className="flex items-center gap-2">
-                    <div>{name}</div>
-                  </div>
-                )}
-                required={true}
-              />
-            )}
+            <DynamicSelect
+              disabled={disabled}
+              fieldName="kraalId"
+              defaultValue={kraalId || undefined}
+              model={{ name: "kraal", queryKey: "name" }}
+              contentLabel="Kraal"
+              label="Kraal"
+              hideLabel
+              initialDataKey="kraals"
+              countKey="totalKraals"
+              closeOnSelect
+              allowClear
+              renderItem={({ name }) => (
+                <div className="flex items-center gap-2">
+                  <div>{name}</div>
+                </div>
+              )}
+              required={true}
+            />
           </FormRow>
         </div>
 

@@ -10,6 +10,7 @@ import { Link, useLoaderData, useNavigate } from "@remix-run/react";
 import mapCss from "maplibre-gl/dist/maplibre-gl.css?url";
 import { z } from "zod";
 import { AssetImage } from "~/components/assets/asset-image";
+import { ActionsDropdown } from "~/components/cattle/actions-dropdown";
 import ContextualModal from "~/components/layout/contextual-modal";
 import Header from "~/components/layout/header";
 import type { HeaderData } from "~/components/layout/header/types";
@@ -158,7 +159,9 @@ export default function CattlePage() {
 
   return (
     <div>
-      <Header title={cattle.name}>{/* <ActionsDropdown /> */}</Header>
+      <Header title={cattle.name}>
+        <ActionsDropdown cattle={cattle} />
+      </Header>
       <ContextualModal />
 
       <div className="mt-8 block lg:flex">
