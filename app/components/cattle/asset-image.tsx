@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import type { Asset } from "@prisma/client";
+import { useState } from "react";
+import type { Cattle } from "@prisma/client";
 
 import { useFetcher } from "@remix-run/react";
 import type { action } from "~/routes/api+/asset.refresh-main-image";
@@ -7,16 +7,15 @@ import { tw } from "~/utils/tw";
 import { Dialog } from "../layout/dialog";
 import { Button } from "../shared/button";
 
-export const AssetImage = ({
-  asset,
+export const CattleImage = ({
+  cattle,
   className,
   withPreview = false,
   ...rest
 }: {
-  asset: {
-    assetId: Asset["id"];
-    mainImage: Asset["mainImage"];
-    mainImageExpiration: Date | string | null;
+  cattle: {
+    cattleId: Cattle["id"];
+    mainImage: Cattle["mainImage"];
     alt: string;
   };
   withPreview?: boolean;
@@ -24,7 +23,7 @@ export const AssetImage = ({
   rest?: HTMLImageElement;
 }) => {
   const fetcher = useFetcher<typeof action>();
-  const { assetId, mainImage, mainImageExpiration, alt } = asset;
+  const { cattleId, mainImage, alt } = cattle;
   const updatedAssetMainImage = fetcher.data?.error
     ? null
     : fetcher.data?.asset.mainImage;
@@ -43,23 +42,6 @@ export const AssetImage = ({
     setIsDialogOpen(false);
   };
 
-  useEffect(() => {
-    if (mainImage && mainImageExpiration) {
-      const now = new Date();
-      const expiration = new Date(mainImageExpiration);
-      if (now > expiration) {
-        fetcher.submit(
-          { assetId, mainImage: mainImage || "" },
-          {
-            method: "post",
-            action: "/api/asset/refresh-main-image",
-          }
-        );
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   return (
     <>
       <img
@@ -77,7 +59,7 @@ export const AssetImage = ({
           title={
             <div>
               <div className=" text-lg font-semibold text-gray-900">
-                {asset.alt}
+                {cattle.alt}
               </div>
               <div className="text-sm font-normal text-gray-600">
                 1 image(s)
@@ -94,7 +76,7 @@ export const AssetImage = ({
               <img src={url} className={"max-h-full"} alt={alt} />
             </div>
             <div className="flex w-full justify-center gap-3 px-6 py-3 md:justify-end">
-              <Button to={`/assets/${asset.assetId}/edit`} variant="secondary">
+              <Button to={`/cattle/${cattleId}/edit`} variant="secondary">
                 Edit image(s)
               </Button>
               <Button variant="secondary" onClick={handleCloseDialog}>

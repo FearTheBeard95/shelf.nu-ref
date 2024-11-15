@@ -1,12 +1,20 @@
 import type { Cattle } from "@prisma/client";
-import { useActionData, useNavigation } from "@remix-run/react";
-import { useAtom } from "jotai";
+import { useActionData, useLoaderData, useNavigation } from "@remix-run/react";
+import { useAtom, useAtomValue } from "jotai";
 import { useZorm } from "react-zorm";
 import { z } from "zod";
 import { updateDynamicTitleAtom } from "~/atoms/dynamic-title-atom";
+import { fileErrorAtom, validateFileAtom } from "~/atoms/file";
+// eslint-disable-next-line import/no-cycle
+import { type loader } from "~/routes/_layout+/cattle.$cattleId_.edit";
+import type { CustomFieldZodSchema } from "~/utils/custom-fields";
+import { mergedSchema } from "~/utils/custom-fields";
 import { isFormProcessing } from "~/utils/form";
 
 import { zodFieldIsRequired } from "~/utils/zod";
+
+import { CattleImage } from "./asset-image";
+
 import { Form } from "../custom-form";
 import DynamicSelect from "../dynamic-select/dynamic-select";
 import FormRow from "../forms/form-row";
@@ -54,7 +62,6 @@ export const NewCattleFormSchema = z.object({
     .string()
     .min(2, "Name is required")
     .transform((val) => val.trim()), // We trim to avoid white spaces at start and end
-
   tagNumber: z.string().transform((val) => val.trim()),
   breed: z.enum([
     "ANGUS",
@@ -94,6 +101,7 @@ export const NewCattleFormSchema = z.object({
 interface Props {
   id?: Cattle["id"];
   name?: Cattle["name"];
+  mainImage?: Cattle["mainImage"];
   tagNumber?: Cattle["tagNumber"];
   breed?: Cattle["breed"];
   gender?: Cattle["gender"];
@@ -107,7 +115,9 @@ interface Props {
 }
 
 export const CattleForm = ({
+  id,
   name,
+  mainImage,
   tagNumber,
   breed,
   gender,
@@ -119,7 +129,26 @@ export const CattleForm = ({
   kraalId,
 }: Props) => {
   const navigation = useNavigation();
-  const FormSchema = NewCattleFormSchema;
+
+  const customFields = useLoaderData<typeof loader>().customFields.map(
+    (cf) =>
+      cf.active && {
+        id: cf.id,
+        name: cf.name,
+        helpText: cf?.helpText || "",
+        required: cf.required,
+        type: cf.type.toLowerCase() as "text" | "number" | "date" | "boolean",
+        options: cf.options,
+      }
+  ) as CustomFieldZodSchema[];
+
+  const FormSchema = mergedSchema({
+    baseSchema: NewCattleFormSchema,
+    customFields,
+  });
+
+  const [, validateFile] = useAtom(validateFileAtom);
+  const fileError = useAtomValue(fileErrorAtom);
 
   const zo = useZorm("NewQuestionWizardScreen", FormSchema);
   const disabled = isFormProcessing(navigation.state);
@@ -171,6 +200,41 @@ export const CattleForm = ({
             defaultValue={name || ""}
             required
           />
+        </FormRow>
+
+        <FormRow rowLabel={"Main image"} className="pt-[10px]">
+          <div className="flex items-center gap-2">
+            {id && mainImage ? (
+              <CattleImage
+                className="size-16"
+                cattle={{
+                  cattleId: id,
+                  mainImage: mainImage,
+                  alt: `${name} image`,
+                }}
+              />
+            ) : null}
+            <div>
+              <p className="hidden lg:block">
+                Accepts PNG, JPG or JPEG (max.4 MB)
+              </p>
+              <Input
+                disabled={disabled}
+                accept="image/png,.png,image/jpeg,.jpg,.jpeg"
+                name="mainImage"
+                type="file"
+                onChange={validateFile}
+                label={"Main image"}
+                hideLabel
+                error={fileError}
+                className="mt-2"
+                inputClassName="border-0 shadow-none p-0 rounded-none"
+              />
+              <p className="mt-2 lg:hidden">
+                Accepts PNG, JPG or JPEG (max.4 MB)
+              </p>
+            </div>
+          </div>
         </FormRow>
 
         <FormRow

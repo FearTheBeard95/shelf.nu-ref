@@ -1,7 +1,11 @@
 import type { Cattle, Prisma, User } from "@prisma/client";
 import { db } from "~/database/db.server";
+import { getSupabaseAdmin } from "~/integrations/supabase/client";
+import { dateTimeInUnix } from "~/utils/date-time-in-unix";
 import type { ErrorLabel } from "~/utils/error";
 import { maybeUniqueConstraintViolation, ShelfError } from "~/utils/error";
+import { Logger } from "~/utils/logger";
+import { createSignedUrl, parseFileFormData } from "~/utils/storage.server";
 
 const label: ErrorLabel = "Cattle";
 
@@ -9,7 +13,7 @@ export async function getCattle(
   params: Pick<Cattle, "id"> & {
     /** Page number. Starts at 1 */
     page?: number;
-    /** Assets to be loaded per page with the location */
+    /** cattle to be loaded per page with the location */
     perPage?: number;
     search?: string | null;
   }
@@ -19,7 +23,7 @@ export async function getCattle(
   const skip = page > 1 ? (page - 1) * perPage : 0;
   const take = perPage >= 1 ? perPage : 8; // min 1 and max 25 per page
 
-  /** Build where object for querying related assets */
+  /** Build where object for querying related cattle */
   let offSpringWhere: Prisma.CattleWhereInput = {};
 
   if (search) {
@@ -82,6 +86,7 @@ export async function updateCattle(payload: {
   id: Cattle["id"];
   userId: User["id"];
   name?: Cattle["name"];
+  mainImage?: Cattle["mainImage"];
   tagNumber?: Cattle["tagNumber"];
   breed?: Cattle["breed"];
   gender?: Cattle["gender"];
@@ -97,6 +102,7 @@ export async function updateCattle(payload: {
     id,
     userId,
     name,
+    mainImage,
     tagNumber,
     breed,
     gender,
@@ -112,6 +118,7 @@ export async function updateCattle(payload: {
   try {
     const data = {
       name: name || undefined,
+      mainImage: mainImage || undefined,
       tagNumber: tagNumber || undefined,
       breed: breed || undefined,
       gender,
@@ -173,5 +180,119 @@ export async function updateCattle(payload: {
         userId,
       },
     });
+  }
+}
+
+export async function updateCattleMainImage({
+  request,
+  cattleId,
+  userId,
+}: {
+  request: Request;
+  cattleId: string;
+  userId: User["id"];
+}) {
+  try {
+    const fileData = await parseFileFormData({
+      request,
+      bucketName: "cattle",
+      newFileName: `${userId}/${cattleId}/main-image-${dateTimeInUnix(
+        Date.now()
+      )}`,
+      resizeOptions: {
+        width: 800,
+        withoutEnlargement: true,
+      },
+    });
+
+    const image = fileData.get("mainImage") as string;
+
+    if (!image) {
+      return;
+    }
+
+    const signedUrl = await createSignedUrl({
+      filename: image,
+      bucketName: "cattle",
+    });
+
+    await updateCattle({
+      id: cattleId,
+      mainImage: signedUrl,
+      userId,
+    });
+    await deleteOtherImages({ userId, cattleId, data: { path: image } });
+  } catch (cause) {
+    throw new ShelfError({
+      cause,
+      message: "Something went wrong while updating asset main image",
+      additionalData: { cattleId, userId },
+      label,
+    });
+  }
+}
+
+function extractMainImageName(path: string): string | null {
+  const match = path.match(/main-image-[\w-]+\.\w+/);
+  if (match) {
+    return match[0];
+  } else {
+    // Handle case without file extension
+    const matchNoExt = path.match(/main-image-[\w-]+/);
+    return matchNoExt ? matchNoExt[0] : null;
+  }
+}
+
+export async function deleteOtherImages({
+  userId,
+  cattleId,
+  data,
+}: {
+  userId: string;
+  cattleId: string;
+  data: { path: string };
+}): Promise<void> {
+  try {
+    if (!data?.path) {
+      // asset image stroage failure. do nothing
+      return;
+    }
+    const currentImage = extractMainImageName(data.path);
+    if (!currentImage) {
+      //do nothing
+      return;
+    }
+    const { data: deletedImagesData, error: deletedImagesError } =
+      await getSupabaseAdmin()
+        .storage.from("cattle")
+        .list(`${userId}/${cattleId}`);
+
+    if (deletedImagesError) {
+      throw new Error(`Error fetching images: ${deletedImagesError.message}`);
+    }
+
+    // Extract the image names and filter out the one to keep
+    const imagesToDelete = (
+      deletedImagesData?.map((image) => image.name) || []
+    ).filter((image) => image !== currentImage);
+
+    // Delete the images
+    await Promise.all(
+      imagesToDelete.map((image) =>
+        getSupabaseAdmin()
+          .storage.from("cattle")
+          .remove([`${userId}/${cattleId}/${image}`])
+      )
+    );
+  } catch (cause) {
+    Logger.error(
+      new ShelfError({
+        cause,
+        title: "Oops, deletion of other cattle images failed",
+        message: "Something went wrong while deleting other cattle images",
+        additionalData: { cattleId, userId },
+        label,
+      })
+    );
   }
 }

@@ -105,6 +105,7 @@ model Kraal {
 model Cattle {
   id                  String         @id @default(cuid())
   name                String?
+  mainImage           String?
   tagNumber           String?        @unique
   breed               Breed
   gender              Gender
@@ -123,11 +124,6 @@ model Cattle {
   offspringAsSire     Cattle[]       @relation("SireOffspring")
   offspringAsDam      Cattle[]       @relation("DamOffspring")
 
-  // Image Fields
-  mainImageId         String?        @unique
-  mainImage           CattleImage?   @relation("MainImage", fields: [mainImageId], references: [id])
-  images              CattleImage[]  @relation("GalleryImages")
-
   // Timestamps
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
@@ -141,23 +137,6 @@ model Cattle {
 
   @@index([sireId])
   @@index([damId])
-  @@index([mainImageId])
-}
-
-model CattleImage {
-  id         String   @id @default(cuid())
-  contentType String
-  altText     String?
-  blob        Bytes
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  // Relations
-  cattle     Cattle?  @relation("GalleryImages", fields: [cattleId], references: [id])
-  cattleId   String?
-  mainCattle Cattle?  @relation("MainImage")
-
-  @@index([cattleId])
 }
 
 model CattleKraalAssignment {

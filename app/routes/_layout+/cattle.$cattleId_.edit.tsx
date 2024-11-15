@@ -8,12 +8,19 @@ import { useLoaderData } from "@remix-run/react";
 import { useAtomValue } from "jotai";
 import { z } from "zod";
 import { dynamicTitleAtom } from "~/atoms/dynamic-title-atom";
+// eslint-disable-next-line import/no-cycle
 import { CattleForm, NewCattleFormSchema } from "~/components/cattle/form";
 import Header from "~/components/layout/header";
 import type { HeaderData } from "~/components/layout/header/types";
 import { getAllEntriesForCreateAndEditCattle } from "~/modules/asset/service.server";
-import { getCattle, updateCattle } from "~/modules/cattle/service.server";
+import {
+  getCattle,
+  updateCattle,
+  updateCattleMainImage,
+} from "~/modules/cattle/service.server";
+import { getActiveCustomFields } from "~/modules/custom-field/service.server";
 import { appendToMetaTitle } from "~/utils/append-to-meta-title";
+import { mergedSchema } from "~/utils/custom-fields";
 import { sendNotification } from "~/utils/emitter/send-notification.server";
 import { makeShelfError } from "~/utils/error";
 import { data, error, getParams, parseData } from "~/utils/http.server";
@@ -22,8 +29,9 @@ import {
   PermissionEntity,
 } from "~/utils/permissions/permission.data";
 import { requirePermission } from "~/utils/roles.server";
+import { slugify } from "~/utils/slugify";
 
-export async function loader({ context, params }: LoaderFunctionArgs) {
+export async function loader({ context, request, params }: LoaderFunctionArgs) {
   const authSession = context.getSession();
   const { userId } = authSession;
   const { cattleId: id } = getParams(
@@ -35,6 +43,12 @@ export async function loader({ context, params }: LoaderFunctionArgs) {
   );
 
   try {
+    const { organizationId } = await requirePermission({
+      userId,
+      request,
+      entity: PermissionEntity.asset,
+      action: PermissionAction.update,
+    });
     const { cattle } = await getCattle({ id });
 
     const {
@@ -46,6 +60,10 @@ export async function loader({ context, params }: LoaderFunctionArgs) {
       totalFemaleCattle,
     } = await getAllEntriesForCreateAndEditCattle({
       userId,
+    });
+
+    const customFields = await getActiveCustomFields({
+      organizationId,
     });
 
     const header: HeaderData = {
@@ -63,6 +81,7 @@ export async function loader({ context, params }: LoaderFunctionArgs) {
         totalFemaleCattle,
         cattle,
         kraalId: cattle.kraalId,
+        customFields,
       })
     );
   } catch (cause) {
@@ -92,14 +111,39 @@ export async function action({ context, request, params }: ActionFunctionArgs) {
 
   try {
     const { organizationId } = await requirePermission({
-      userId: authSession.userId,
+      userId,
       request,
-      entity: PermissionEntity.location,
+      entity: PermissionEntity.asset,
       action: PermissionAction.update,
     });
 
-    const payload = parseData(await request.formData(), NewCattleFormSchema, {
+    const clonedRequest = request.clone();
+    const formData = await clonedRequest.formData();
+
+    const customFields = await getActiveCustomFields({
+      organizationId,
+    });
+
+    const FormSchema = mergedSchema({
+      baseSchema: NewCattleFormSchema,
+      customFields: customFields.map((cf) => ({
+        id: cf.id,
+        name: slugify(cf.name),
+        helpText: cf?.helpText || "",
+        required: cf.required,
+        type: cf.type.toLowerCase() as "text" | "number" | "date" | "boolean",
+        options: cf.options,
+      })),
+    });
+
+    const payload = parseData(formData, FormSchema, {
       additionalData: { userId, organizationId, id },
+    });
+
+    await updateCattleMainImage({
+      request,
+      cattleId: id,
+      userId,
     });
 
     const {

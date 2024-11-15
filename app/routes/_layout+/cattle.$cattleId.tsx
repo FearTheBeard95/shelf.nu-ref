@@ -184,12 +184,12 @@ export default function CattlePage() {
             <span className="font-medium">{cattle.gender}</span>
           </div>
           {/* Age */}
-          {cattle.age && (
+          {cattle.age ? (
             <div className="mt-4 flex items-center justify-between gap-10 rounded border border-gray-200 px-4 py-5">
               <span className=" text-xs font-medium text-gray-600">Age</span>
               <span className="font-medium">{cattle.age} years</span>
             </div>
-          )}
+          ) : null}
           {/* Breed */}
           <div className="mt-4 flex items-center justify-between gap-10 rounded border border-gray-200 px-4 py-5">
             <span className=" text-xs font-medium text-gray-600">Breed</span>
