@@ -7,9 +7,9 @@ import {
 } from "@remix-run/node";
 import { useNavigate } from "@remix-run/react";
 import { z } from "zod";
-import { AssetImage } from "~/components/assets/asset-image";
 import BulkActionsDropdown from "~/components/assets/bulk-actions-dropdown";
 import { StatusFilter } from "~/components/booking/status-filter";
+import { CattleImage } from "~/components/cattle/asset-image";
 import type { HeaderData } from "~/components/layout/header/types";
 import { List, type ListProps } from "~/components/list";
 import { ListContentWrapper } from "~/components/list/content-wrapper";
@@ -226,12 +226,10 @@ export const ListCattleContent = ({ item }: { item: Cattle }) => {
         <div className="flex justify-between gap-3 p-4  md:justify-normal md:px-6">
           <div className="flex items-center gap-3">
             <div className="relative flex size-12 shrink-0 items-center justify-center">
-              <AssetImage
-                asset={{
-                  assetId: item.id,
-                  mainImage:
-                    "https://plus.unsplash.com/premium_photo-1677850452987-d3ff550db018?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", // TODO Use cattle image
-                  mainImageExpiration: null,
+              <CattleImage
+                cattle={{
+                  cattleId: item.id,
+                  mainImage: item.mainImage,
                   alt: item.id,
                 }}
                 className="size-full rounded-[4px] border object-cover"

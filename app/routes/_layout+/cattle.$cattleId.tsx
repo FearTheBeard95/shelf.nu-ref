@@ -9,8 +9,8 @@ import type {
 import { Link, useLoaderData, useNavigate } from "@remix-run/react";
 import mapCss from "maplibre-gl/dist/maplibre-gl.css?url";
 import { z } from "zod";
-import { AssetImage } from "~/components/assets/asset-image";
 import { ActionsDropdown } from "~/components/cattle/actions-dropdown";
+import { CattleImage } from "~/components/cattle/asset-image";
 import ContextualModal from "~/components/layout/contextual-modal";
 import Header from "~/components/layout/header";
 import type { HeaderData } from "~/components/layout/header/types";
@@ -166,14 +166,13 @@ export default function CattlePage() {
 
       <div className="mt-8 block lg:flex">
         <div className="shrink-0 overflow-hidden lg:w-[250px] 2xl:w-[400px]">
-          <AssetImage
-            asset={{
-              assetId: cattle.id,
-              mainImage:
-                "https://plus.unsplash.com/premium_photo-1677850452987-d3ff550db018?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-              mainImageExpiration: null,
+          <CattleImage
+            cattle={{
+              cattleId: cattle.id,
+              mainImage: cattle.mainImage,
               alt: cattle.id,
             }}
+            className="w-full"
           />
 
           <TextualDivider text="Details" className="my-8 lg:hidden" />
@@ -259,12 +258,11 @@ export const CattleDetail: FC<{ cattle: any }> = ({ cattle }) => (
   <Link to={`/cattle/${cattle.id}`}>
     <div className="mt-4 flex items-center gap-10 rounded border border-gray-200 px-4 py-5">
       <div className="relative flex size-12 shrink-0 items-center justify-center">
-        <AssetImage
-          asset={{
-            assetId: cattle.id,
-            mainImage:
-              "https://plus.unsplash.com/premium_photo-1677850452987-d3ff550db018?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", // TODO Use cattle image
-            mainImageExpiration: null,
+        <CattleImage
+          cattle={{
+            cattleId: cattle.id,
+            mainImage: cattle.mainImage,
+
             alt: cattle.id,
           }}
           className="size-full rounded-[4px] border object-cover"
